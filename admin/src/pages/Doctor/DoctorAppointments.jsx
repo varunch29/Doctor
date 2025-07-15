@@ -1,17 +1,25 @@
-import React from 'react'
-import { useContext } from 'react'
+// import React from 'react'
+// import { useContext } from 'react'
+
+import React, { useContext, useEffect, useState } from 'react'
+
 import { DoctorContext } from '../../context/DoctorContext'
-import { useEffect } from 'react'
 import { AppContext } from '../../context/AppContext'
 import { assets } from '../../assets/assets'
+import ChatPopup from '../../components/ChatPopup'; // adjust path if needed
+
 
 const DoctorAppointments = () => {
 
   const { dToken, appointments, getAppointments, completeAppointment, cancelAppointment } = useContext(DoctorContext)
   const { calculateAge, currency } = useContext(AppContext)
-  const handleComplete = async (item)=>{
-    console.log('item: ' , item)
-    console.log('item: ' , item.userId)
+
+  const [openChatId, setOpenChatId] = useState(null);
+
+
+  const handleComplete = async (item) => {
+    console.log('item: ', item)
+    console.log('item: ', item.userId)
     completeAppointment(item._id)
   }
   useEffect(() => {
@@ -36,7 +44,7 @@ const DoctorAppointments = () => {
           <p>Action</p>
         </div>
         {
-          appointments.reverse().map((item, index) => (
+          [...appointments].reverse().map((item, index) => (
             <div className='flex flex-wrap justify-between max-sm:gap-5 max-sm:text-base sm:grid grid-cols-[0.5fr_2fr_1fr_1fr_3fr_1fr_1fr] gap-1 items-center text-gray-500 py-3 px-6 border-b hover:bg-gray-50' key={index}>
               <p className='max-sm:hidden'>{index + 1}</p>
               <div className='flex items-center gap-2'>
@@ -51,7 +59,7 @@ const DoctorAppointments = () => {
               <p className='max-sm:hidden'>{calculateAge(item.userData.dob)}</p>
               <p>{item.slotDate},{item.slotTime}</p>
               <p>{currency}{item.amount}</p>
-              {
+              {/* {
                 item.cancel
                   ? <p className='text-red-400 text-xs font-medium'>Cancelled</p>
                   : item.isCompleted
@@ -60,12 +68,61 @@ const DoctorAppointments = () => {
                       <img onClick={() => cancelAppointment(  item._id)} className='w-10 cursor-pointer' src={assets.cancel_icon} alt="" />
                       <img onClick={() => handleComplete(item)} className='w-10 cursor-pointer' src={assets.tick_icon} alt="" />
                     </div>
+              } */}
+
+
+              {
+                item.cancel ? (
+                  <p className='text-red-400 text-xs font-medium'>Cancelled</p>
+                ) : (
+                  <div className='flex flex-col gap-1 items-start'>
+                    <div className='flex gap-2'>
+                      {item.isCompleted ? (
+                        <p className='text-green-500 text-xs font-medium'>Completed</p>
+                      ) : (
+                        <>
+                          <img
+                            onClick={() => cancelAppointment(item._id)}
+                            className='w-6 cursor-pointer'
+                            src={assets.cancel_icon}
+                            alt='Cancel'
+                          />
+                          <img
+                            onClick={() => handleComplete(item)}
+                            className='w-6 cursor-pointer'
+                            src={assets.tick_icon}
+                            alt='Complete'
+                          />
+                        </>
+                      )}
+                    </div>
+                    <button
+                      onClick={() => setOpenChatId(item._id)}
+                      className='text-xs text-blue-600 underline hover:text-blue-800 mt-1'
+                    >
+                      Chat
+                    </button>
+                  </div>
+                )
               }
+
+
 
             </div>
           ))
         }
       </div>
+
+      {openChatId && (
+        <ChatPopup
+          appointmentId={openChatId}
+          userId="doctor"
+          doctorName="You (Doctor)"
+          onClose={() => setOpenChatId(null)}
+        />
+      )}
+
+
     </div>
   )
 }

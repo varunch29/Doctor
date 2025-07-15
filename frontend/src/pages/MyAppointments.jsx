@@ -2,12 +2,20 @@ import React, { useContext, useEffect, useState } from 'react'
 import { Appcontext } from '../context/Appcontext'
 import axios from 'axios'
 import { toast } from 'react-toastify'
+import ChatPopup from '../components/ChatPopup';
 
 
 const MyAppointments = () => {
 
-  const { backendUrl, token , getDoctorsData} = useContext(Appcontext)
+  const { backendUrl, token, getDoctorsData } = useContext(Appcontext)
   const [appointments, setAppointments] = useState([])
+
+
+  const [openChatId, setOpenChatId] = useState(null);
+  const [chatDoctor, setChatDoctor] = useState('');
+
+
+
   const getUSerAppointments = async () => {
     try {
       const { data } = await axios.get(backendUrl + '/api/user/appointments', { headers: { token } })
@@ -64,7 +72,20 @@ const MyAppointments = () => {
             </div>
             <div></div>
             <div className='flex flex-col gap-2 justify-end'>
-              {!item.cancel && <button className='text-sm text-stone-500 text-center sm:min-w-48 py-2 border rounded hover:bg-primary hover:text-white transition-all duration-300'>Pay Online</button>}
+
+              {!item.cancel && (
+                <button
+                  onClick={() => {
+                    setOpenChatId(item._id); // appointmentId
+                    setChatDoctor(item.docData.name);
+                  }}
+                  className='text-sm text-stone-500 text-center sm:min-w-48 py-2 border rounded hover:bg-primary hover:text-white transition-all duration-300'
+                >
+                  Chat
+                </button>
+              )}
+
+              {/* {!item.cancel && <button className='text-sm text-stone-500 text-center sm:min-w-48 py-2 border rounded hover:bg-primary hover:text-white transition-all duration-300'>Pay Online</button>}
               {!item.cancel && (
                 <button
                   onClick={() => cancelAppointment(item._id)}
@@ -73,11 +94,42 @@ const MyAppointments = () => {
                   Cancel Appointment
                 </button>
               )}
-              {item.cancel && <button className='sm:min-w-48 py-2 border border-red-500 rounded text-red-500'>Appointment Cancelled</button>}
+              {item.cancel && <button className='sm:min-w-48 py-2 border border-red-500 rounded text-red-500'>Appointment Cancelled</button>} */}
+
+              {item.isCompleted ? (
+                <button className='sm:min-w-48 py-2 border border-green-500 rounded text-green-500'>
+                  Appointment Completed
+                </button>
+              ) : item.cancel ? (
+                <button className='sm:min-w-48 py-2 border border-red-500 rounded text-red-500'>
+                  Appointment Cancelled
+                </button>
+              ) : (
+                <button
+                  onClick={() => cancelAppointment(item._id)}
+                  className="text-sm text-stone-500 text-center sm:min-w-48 py-2 border rounded hover:bg-red-600 hover:text-white transition-all duration-300"
+                >
+                  Cancel Appointment
+                </button>
+              )}
+
             </div>
           </div>
         ))}
       </div>
+
+
+      {/* 👇 Chat Popup goes here  */}
+      {openChatId && (
+        <ChatPopup
+          appointmentId={openChatId}
+          userId="patient" // or actual user ID from context
+          doctorName={chatDoctor}
+          onClose={() => setOpenChatId(null)}
+        />
+      )}
+
+
     </div>
   )
 }

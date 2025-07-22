@@ -1,14 +1,27 @@
 import React, { useEffect, useRef, useState } from 'react';
 import io from 'socket.io-client';
 
-const socket = io('http://localhost:4000'); // your backend URL
+const socket = io('http://localhost:4000'); // Update if needed
 
-const ChatPopup = ({ onClose, appointmentId, userId, doctorName }) => {
+const ChatPopup = ({ onClose, appointmentId, userId, doctorId, doctorName, patientUserId }) => {
   const [message, setMessage] = useState('');
   const [messages, setMessages] = useState([]);
   const chatBoxRef = useRef();
 
+  // Load message history
   useEffect(() => {
+    const fetchMessages = async () => {
+      try {
+        const res = await fetch(`http://localhost:4000/api/messages/${appointmentId}`);
+        const data = await res.json();
+        setMessages(data);
+      } catch (error) {
+        console.error('Error loading messages:', error);
+      }
+    };
+
+    fetchMessages();
+
     socket.emit('joinRoom', { appointmentId });
 
     socket.on('receiveMessage', (msg) => {
@@ -17,7 +30,7 @@ const ChatPopup = ({ onClose, appointmentId, userId, doctorName }) => {
 
     return () => {
       socket.emit('leaveRoom', { appointmentId });
-      socket.off('receiveMessage'); // clean up listener
+      socket.off('receiveMessage');
     };
   }, [appointmentId]);
 
@@ -30,28 +43,15 @@ const ChatPopup = ({ onClose, appointmentId, userId, doctorName }) => {
       const msg = {
         appointmentId,
         sender: userId,
+        receiver: userId === doctorId ? doctorId : doctorId, // receiver logic
         text: message,
         timestamp: new Date().toISOString(),
       };
+
       socket.emit('sendMessage', msg);
-      setMessages(prev => [...prev, msg]);
-      setMessage('');
+      setMessage(''); // Just clear input
     }
   };
-  // const sendMessage = () => {
-  //   if (input.trim() === '') return;
-
-  //   const messageData = {
-  //     appointmentId,
-  //     sender: userId,
-  //     text: input.trim(),
-  //     timestamp: new Date().toISOString(),
-  //   };
-
-  //   socket.emit('sendMessage', messageData); // Just emit, don't add to state
-  //   setInput('');
-  // };
-
 
 
   return (
@@ -64,13 +64,12 @@ const ChatPopup = ({ onClose, appointmentId, userId, doctorName }) => {
         {messages.map((msg, i) => (
           <div
             key={i}
-            className={`mb-2 flex ${msg.sender === userId ? 'justify-end' : 'justify-start'
-              }`}
+            className={`mb-2 flex ${msg.sender === userId ? 'justify-end' : 'justify-start'}`}
           >
             <div
               className={`px-3 py-2 rounded-lg max-w-[70%] ${msg.sender === userId
-                ? 'bg-green-500 text-white'
-                : 'bg-white border text-black'
+                  ? 'bg-green-500 text-white'
+                  : 'bg-white border text-black'
                 }`}
             >
               {msg.text}

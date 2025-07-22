@@ -2,51 +2,85 @@ import React, { useEffect, useState, useRef } from 'react';
 import io from 'socket.io-client';
 import { X } from 'lucide-react';
 
-const socket = io('http://localhost:4000'); // Replace with your backend URL in production
-
-const AdminChatPopup = ({ appointmentId, userId, patientName = 'Patient', onClose }) => {
+const AdminChatPopup = ({
+  appointmentId,
+  userId,       // sender (doctor/admin)
+  patientId,    // receiver (patient)
+  patientName = 'Patient',
+  onClose
+}) => {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const messagesEndRef = useRef(null);
+  const socketRef = useRef(null);
 
+  // Debug check for required props
   useEffect(() => {
-    // Join room when component mounts
-    socket.emit('joinRoom', { appointmentId });
+    if (!appointmentId || !userId || !patientId) {
+      console.warn('Missing chat props:', { appointmentId, userId, patientId });
+    }
+  }, [appointmentId, userId, patientId]);
 
-    // Listen for incoming messages
-    socket.on('receiveMessage', (msg) => {
+  // Connect socket and join room
+  useEffect(() => {
+    // Create socket connection
+    socketRef.current = io('http://localhost:4000');
+
+    socketRef.current.emit('joinRoom', { appointmentId, userId });
+
+    socketRef.current.on('receiveMessage', (msg) => {
       setMessages((prev) => [...prev, msg]);
     });
 
-    // Cleanup: leave room and remove listener
     return () => {
-      socket.emit('leaveRoom', { appointmentId });
-      socket.off('receiveMessage');
+      // Leave room and cleanup listeners
+      socketRef.current.emit('leaveRoom', { appointmentId });
+      socketRef.current.disconnect();
     };
+  }, [appointmentId, userId]);
+
+  // Fetch chat history
+  useEffect(() => {
+    const fetchChatHistory = async () => {
+      try {
+        const res = await fetch(`http://localhost:4000/api/messages/${appointmentId}`);
+        const data = await res.json();
+        setMessages(data);
+      } catch (err) {
+        console.error('Failed to load chat history:', err);
+      }
+    };
+
+    if (appointmentId) fetchChatHistory();
   }, [appointmentId]);
 
+  // Send message
   const sendMessage = () => {
-    if (input.trim() === '') return;
+    if (!input.trim() || !userId || !patientId) return;
 
     const messageData = {
       appointmentId,
       sender: userId,
-      text: input.trim(), // Use 'text' to match patient and server
-      timestamp: new Date().toISOString(),
+      receiver: patientId,
+      text: input.trim(),
     };
 
-    socket.emit('sendMessage', messageData);
-    setMessages((prev) => [...prev, messageData]);
+    socketRef.current.emit('sendMessage', messageData, (ack) => {
+      if (ack?.status !== 'ok') {
+        console.error('Message failed to send');
+      }
+    });
+
     setInput('');
   };
 
-  // Scroll to latest message
+  // Auto-scroll to latest message
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
   return (
-    <div className="fixed bottom-4 right-4 w-80 h-96 bg-white shadow-xl rounded-xl border flex flex-col z-50">
+    <div className="fixed bottom-4 right-4 w-80 h-96 bg-white shadow-xl rounded-xl border flex flex-col z-[9999]">
       {/* Header */}
       <div className="bg-green-600 text-white px-4 py-2 rounded-t-xl font-bold flex justify-between items-center">
         <h3 className="text-sm font-semibold">Chat with {patientName}</h3>

@@ -7,8 +7,14 @@ import ChatPopup from '../components/ChatPopup';
 
 const MyAppointments = () => {
 
-  const { backendUrl, token, getDoctorsData } = useContext(Appcontext)
+  // const { backendUrl, token, getDoctorsData } = useContext(Appcontext)
+
+  const { backendUrl, token, getDoctorsData, userData } = useContext(Appcontext);
+
   const [appointments, setAppointments] = useState([])
+
+  const [chatDoctorId, setChatDoctorId] = useState(null);
+
 
 
   const [openChatId, setOpenChatId] = useState(null);
@@ -78,6 +84,7 @@ const MyAppointments = () => {
                   onClick={() => {
                     setOpenChatId(item._id); // appointmentId
                     setChatDoctor(item.docData.name);
+                    setChatDoctorId(item.docData._id);
                   }}
                   className='text-sm text-stone-500 text-center sm:min-w-48 py-2 border rounded hover:bg-primary hover:text-white transition-all duration-300'
                 >
@@ -123,11 +130,17 @@ const MyAppointments = () => {
       {openChatId && (
         <ChatPopup
           appointmentId={openChatId}
-          userId="patient" // or actual user ID from context
-          doctorName={chatDoctor}
-          onClose={() => setOpenChatId(null)}
+          userId={userData?._id}         // 👤 patient/user ID
+          doctorId={chatDoctorId}        // 👨‍⚕️ doctor ID
+          doctorName={chatDoctor}        // doctor name
+          onClose={() => {
+            setOpenChatId(null);
+            setChatDoctor('');
+            setChatDoctorId(null);
+          }}
         />
       )}
+
 
 
     </div>

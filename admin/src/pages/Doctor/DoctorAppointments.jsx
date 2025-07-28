@@ -363,8 +363,34 @@ const DoctorAppointments = () => {
                 </button>
               </div>
             )}
+
+            <div className="flex flex-col gap-1 items-start">
+              {item.cancel ? (
+                <p className="text-xs text-gray-400">Unavailable</p>
+              ) : item.isCompleted ? (
+                <button
+                  onClick={() => {
+                    // Handle send prescription logic here
+                    console.log('Send prescription for appointment:', item._id);
+                    // You can add your prescription sending logic here
+                  }}
+                  className="text-xs bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600 transition-all duration-300"
+                >
+                  Send
+                </button>
+              ) : (
+                <button
+                  disabled
+                  className="text-xs bg-gray-300 text-gray-500 px-3 py-1 rounded cursor-not-allowed"
+                >
+                  Unavailable
+                </button>
+              )}
+            </div>
           </div>
+
         ))}
+
       </div>
 
       {openChatAppointment && profileData && profileData._id && chatRoomId && (

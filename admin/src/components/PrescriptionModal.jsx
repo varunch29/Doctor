@@ -127,7 +127,7 @@
 
 
 import React, { useState, useEffect } from 'react';
-import { jsPDF } from 'jspdf';
+import  jsPDF  from 'jspdf';
 import emailjs from 'emailjs-com';
 
 const PrescriptionModal = ({ isOpen, onClose, patientName, doctorName, patientEmail }) => {
